@@ -63,12 +63,12 @@ jobs:
           os: macos-latest
           rust: nightly
           target: x86_64-apple-darwin
-          extra: ""
+          extra: "--features vendored"
         - build: win-msvc
           os: windows-2019
           rust: nightly
           target: x86_64-pc-windows-msvc
-          extra: ""
+          extra: "--features vendored"
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
