@@ -1,0 +1,18 @@
+[package]
+name = "block_users"
+version = "0.1.0"
+edition = "2018"
+
+
+[dependencies]
+twitch_api2 = { version = "0.6.0-rc.2", features = ["reqwest_client", "helix", "trace_unknown_fields"] }
+reqwest = { version = "0.11.3", features = ["json"] }
+dotenv = "0.15.0"
+anyhow = "1.0.40"
+tracing-subscriber = "0.2.17"
+tracing = "0.1.25"
+clap = {git = "https://github.com/clap-rs/clap", rev = "6527fde" }
+url = "2.2.2"
+serde_json = "1.0.64"
+tokio = { version = "1.5.0", features = ["full"] }
+futures = "0.3.16"
