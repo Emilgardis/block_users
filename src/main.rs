@@ -238,7 +238,6 @@ pub async fn run(opts: &Opts) -> anyhow::Result<()> {
                 .try_collect::<Vec<_>>()
                 .await?,
             );
-            dbg!(&blocked);
         }
         let to_block = blocking
             .clone()
