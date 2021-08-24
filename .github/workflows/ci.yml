@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        rust: [stable]
+        rust: [nightly]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
