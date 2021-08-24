@@ -1,8 +1,8 @@
 [package]
-name = "block_users"
-version = "0.1.0"
+name = "block-users"
+version = "0.0.1"
 edition = "2018"
-
+publish = false
 
 [dependencies]
 twitch_api2 = { version = "0.6.0-rc.2", features = ["reqwest_client", "helix", "trace_unknown_fields"] }
