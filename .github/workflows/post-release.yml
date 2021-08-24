@@ -58,14 +58,17 @@ jobs:
           os: ubuntu-18.04
           rust: nightly
           target: x86_64-unknown-linux-musl
+          extra: "--features vendored"
         - build: macos
           os: macos-latest
           rust: nightly
           target: x86_64-apple-darwin
+          extra: ""
         - build: win-msvc
           os: windows-2019
           rust: nightly
           target: x86_64-pc-windows-msvc
+          extra: ""
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
@@ -85,7 +88,7 @@ jobs:
         override: true
         target: ${{ matrix.target }}
     - name: Build release binary
-      run: cargo build --target ${{ matrix.target }} --verbose --release
+      run: cargo build --target ${{ matrix.target }} --verbose --release ${{ matrix.extra }}
     - name: Build archive
       shell: bash
       run: |
