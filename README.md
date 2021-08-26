@@ -32,7 +32,7 @@ FLAGS:
 
 OPTIONS:
         --access-token <ACCESS_TOKEN>
-            OAuth2 Access token. Can be generated with [env: ACCESS_TOKEN]
+            OAuth2 Access token [env: ACCESS_TOKEN]
 
         --channel-login <CHANNEL_LOGIN>
             Name of channel to get token for [env: CHANNEL_LOGIN]

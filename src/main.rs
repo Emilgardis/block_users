@@ -38,7 +38,7 @@ pub struct Opts {
         multiple_values = true
     )]
     pub users: Option<Vec<String>>,
-    /// OAuth2 Access token. Can be generated with
+    /// OAuth2 Access token.
     #[clap(long, env, setting = ArgSettings::HideEnvValues, group = "token",
         validator = is_token, required_unless_present = "service",
     )]
