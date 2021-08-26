@@ -3,6 +3,7 @@ name = "block-users"
 version = "0.0.2"
 edition = "2018"
 publish = false
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 twitch_api2 = { version = "0.6.0-rc.2", features = ["reqwest_client", "helix", "trace_unknown_fields"] }

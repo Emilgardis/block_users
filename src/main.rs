@@ -18,8 +18,19 @@ use twitch_api2::{
     group = ArgGroup::new("service").multiple(true), 
 )]
 pub struct Opts {
+    /// File to read users from
     #[clap(long, required_unless_present = "users", conflicts_with = "users")]
     pub file: Option<std::path::PathBuf>,
+    /// Skip content after first comma in a line, ignoring that data
+    #[clap(long)]
+    pub skip_comma: bool,
+    /// Always check previously blocked users before sending blocks. 
+    #[clap(long)]
+    pub check_first: bool,
+    /// Unblock users instead of blocking.
+    #[clap(long)]
+    pub unblock: bool,
+    /// Users to block.
     #[clap(
         long,
         required_unless_present = "file",
@@ -27,7 +38,7 @@ pub struct Opts {
         multiple_values = true
     )]
     pub users: Option<Vec<String>>,
-    /// OAuth2 Access token
+    /// OAuth2 Access token. Can be generated with
     #[clap(long, env, setting = ArgSettings::HideEnvValues, group = "token",
         validator = is_token, required_unless_present = "service",
     )]
@@ -37,7 +48,7 @@ pub struct Opts {
         required_unless_present = "token"
     )]
     pub channel_login: Option<String>,
-    /// URL to service that provides OAuth2 token. Called on start, needs to have {login} in url
+    /// URL to service that provides OAuth2 token. Called on start, can have {login} in url to replace with [channel_login].
     #[clap(long, env, setting = ArgSettings::HideEnvValues, group = "token", 
         validator = url::Url::parse,
         required_unless_present = "token"
@@ -170,9 +181,9 @@ pub async fn get_access_token(
 async fn main() {
     let _ = dotenv::dotenv().with_context(|| "couldn't load .env file"); //ignore error
     let s = tracing_subscriber::FmtSubscriber::builder()
-        .pretty()
-        .with_thread_names(true)
-        .with_thread_ids(true)
+        .compact()
+        .with_thread_names(false)
+        .with_thread_ids(false)
         .with_ansi(true)
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .finish();
@@ -203,13 +214,24 @@ pub async fn run(opts: &Opts) -> anyhow::Result<()> {
     let token = std::sync::Arc::new(token);
 
     let blocking: Vec<types::Nickname> = match (&opts.file, &opts.users) {
-        (Some(file), None) => std::fs::read(&file)?
+        (Some(file), None) if !opts.skip_comma => std::fs::read(&file)?
             .lines()
             .map(|r| r.map(types::Nickname::from))
+            .collect::<Result<_, _>>()?,
+        (Some(file), None) if opts.skip_comma => std::fs::read(&file)?
+            .lines()
+            .map(|r| r.map(|s| types::Nickname::from(s.split_once(',').unwrap_or_default().0)))
             .collect::<Result<_, _>>()?,
         (None, Some(users)) => users.iter().map(|s| s.as_str().into()).collect(),
         _ => anyhow::bail!("can't specify a user and a file at the same time"),
     };
+
+    if opts.unblock {
+        for user in blocking {
+            unblock_user(&client, &user, &token).await?
+        }
+        return Ok(())
+    }
 
     let blocked_req = get_user_block_list::GetUserBlockListRequest::builder()
         .broadcaster_id(token.user_id.clone())
@@ -224,12 +246,13 @@ pub async fn run(opts: &Opts) -> anyhow::Result<()> {
         };
 
         let last = previously_blocked.lock().await.last().cloned();
-        if !first_run {
+        if !first_run || opts.check_first {
             // We check blocks one time again before calling api, since we might have hit only suspened/non existing accounts
             if !blocking.iter().any(|s| !blocked.contains(s)) {
                 tracing::info!("nothing more to block");
                 break;
             }
+            tracing::info!("checking blocked users");
             blocked.extend(
                 make_stream(blocked_req.clone(), &*token, &client, |s| {
                     s.into_iter().map(|u| u.user_login).collect()
@@ -252,8 +275,8 @@ pub async fn run(opts: &Opts) -> anyhow::Result<()> {
         if first_run {
             first_run = false;
         } else {
-            tracing::info!("waiting 20 seconds, not all users where blocked");
-            tokio::time::sleep(std::time::Duration::from_secs(20)).await;
+            tracing::info!("waiting 10 seconds, not all users were blocked");
+            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
         };
 
         futures::stream::iter(to_block)
@@ -290,7 +313,6 @@ pub async fn block_user<'c, C: twitch_api2::client::Client<'c> + Sync + 'c>(
     user_login: &types::UserNameRef,
     token: &twitch_oauth2::UserToken,
 ) -> anyhow::Result<Exists> {
-    tracing::debug!("running on: {:?}", user_login);
     let user = match client
         .get_user_from_login(user_login.to_owned(), token)
         .await?
