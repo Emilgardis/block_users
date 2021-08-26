@@ -24,7 +24,7 @@ pub struct Opts {
     /// Skip content after first comma in a line, ignoring that data
     #[clap(long)]
     pub skip_comma: bool,
-    /// Always check previously blocked users before sending blocks. 
+    /// Always check previously blocked users before sending blocks.
     #[clap(long)]
     pub check_first: bool,
     /// Unblock users instead of blocking.
@@ -230,7 +230,7 @@ pub async fn run(opts: &Opts) -> anyhow::Result<()> {
         for user in blocking {
             unblock_user(&client, &user, &token).await?
         }
-        return Ok(())
+        return Ok(());
     }
 
     let blocked_req = get_user_block_list::GetUserBlockListRequest::builder()
