@@ -1,4 +1,5 @@
 #![feature(option_result_contains)]
+
 use std::io::BufRead;
 
 use anyhow::Context;
@@ -209,7 +210,12 @@ async fn main() {
 
 pub async fn run(opts: &Opts) -> anyhow::Result<()> {
     use futures::{StreamExt, TryStreamExt};
-    let client: twitch_api2::HelixClient<reqwest::Client> = twitch_api2::HelixClient::default();
+    let reqwest: reqwest::Client = twitch_api2::client::ClientDefault::default_client_with_name(
+        Some("emilgardis/block_user".parse()?),
+    )
+    .with_context(|| "could not create reqwest client")?;
+    let client: twitch_api2::HelixClient<reqwest::Client> =
+        twitch_api2::HelixClient::with_client(reqwest);
     let token = get_access_token(&client.clone_client(), opts).await?;
     let token = std::sync::Arc::new(token);
 
@@ -257,7 +263,7 @@ pub async fn run(opts: &Opts) -> anyhow::Result<()> {
                 make_stream(blocked_req.clone(), &*token, &client, |s| {
                     s.into_iter().map(|u| u.user_login).collect()
                 })
-                .try_take_while(|n| futures::future::ready(Ok(!last.as_deref().contains(&n))))
+                //.try_take_while(|n| futures::future::ready(Ok(!last.as_deref().contains(&n))))
                 .try_collect::<Vec<_>>()
                 .await?,
             );
@@ -281,7 +287,7 @@ pub async fn run(opts: &Opts) -> anyhow::Result<()> {
 
         futures::stream::iter(to_block)
             .map(Ok)
-            .try_for_each_concurrent(10, |n| {
+            .try_for_each_concurrent(4, |n| {
                 let previously_blocked = previously_blocked.clone();
                 let client = client.clone();
                 let token = token.clone();
