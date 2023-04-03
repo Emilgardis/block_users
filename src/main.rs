@@ -343,8 +343,7 @@ pub async fn run_block(opts: &Opts, block: &Block) -> anyhow::Result<()> {
         });
     }
 
-    let blocked_req =
-        get_user_block_list::GetUserBlockListRequest::broadcaster_id(&token.user_id);
+    let blocked_req = get_user_block_list::GetUserBlockListRequest::broadcaster_id(&token.user_id);
     let previously_blocked = std::sync::Arc::new(tokio::sync::Mutex::new(vec![]));
     let mut first_run = true;
     loop {
@@ -441,10 +440,7 @@ pub async fn ban_user<'c, C: twitch_api::client::Client + Sync + 'c>(
     broadcaster_id: &types::UserIdRef,
     token: &twitch_oauth2::UserToken,
 ) -> anyhow::Result<Exists> {
-    let user = match client
-        .get_user_from_login(user_login, token)
-        .await?
-    {
+    let user = match client.get_user_from_login(user_login, token).await? {
         Some(u) => u,
         None if user_login
             .as_str()
